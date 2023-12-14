@@ -1,32 +1,18 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const { sequelize } = require('./models'); // Ensure the path to your models is correct
-const formRoutes = require('./routes/forms');
-const responseRoutes = require('./routes/responses');
 const cors = require('cors');
+const connectToMongo = require('./db');
+require('dotenv').config();
 
+connectToMongo();
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 5002;
 
 app.use(cors());
+app.use(express.json());
 
-app.use(bodyParser.json());
-app.use(express.urlencoded({ extended: false }));
+// Available Routes
+app.use('/api/auth', require('./routes/auth'))
 
-
-// Routes
-app.use('/forms', formRoutes);
-app.use('/responses', responseRoutes);
-
-// Database Connection
-sequelize
-  .sync()
-  .then(() => {
-    console.log('Database connection established.');
-    app.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error('Unable to connect to the database:', error);
-  });
+app.listen(port, () => {
+    console.log(`Server is running on port: ${port}`);
+});
