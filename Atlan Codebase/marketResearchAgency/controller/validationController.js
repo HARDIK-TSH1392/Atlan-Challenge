@@ -1,8 +1,5 @@
-// controllers/validationController.js
-
 const axios = require('axios');
 const Data = require('../models/Data');
-const feedbackController = require('./feedbackController');
 
 // Function to compare income and saving values and submit feedback if needed
 exports.validateAndSubmitFeedback = async (req, res) => {
@@ -17,13 +14,15 @@ exports.validateAndSubmitFeedback = async (req, res) => {
             // Iterate over the arrays and compare values
             for (let i = 0; i < income.length; i++) {
                 if (saving[i] > income[i]) {
-                    // API call to submit feedback
-                    const feedbackApiUrl = 'http://localhost:5002/api/feedback/submitfeedback';
-                    const feedbackData = {
-                        message: 'Inconsistent values',
-                        values: { income: income[i], saving: saving[i] }
-                    };
-                    await axios.post(feedbackApiUrl, feedbackData, { headers: { Authorization: req.headers.authorization } });
+                    // Retry API call with exponential backoff
+                    await retryWithExponentialBackoff(async () => {
+                        const feedbackApiUrl = 'http://localhost:5002/api/feedback/submitfeedback';
+                        const feedbackData = {
+                            message: 'Inconsistent values',
+                            values: { income: income[i], saving: saving[i] }
+                        };
+                        await axios.post(feedbackApiUrl, feedbackData, { headers: { Authorization: req.headers.authorization } });
+                    });
                 }
             }
 
@@ -32,7 +31,28 @@ exports.validateAndSubmitFeedback = async (req, res) => {
             res.status(404).json({ success: false, message: 'Data not found or inconsistent arrays' });
         }
     } catch (error) {
-        console.error(error.message);
-        res.status(500).send('Internal Server Error');
+        console.error('Error in validateAndSubmitFeedback:', error.message);
+
+        // Log the error and continue to send a response to the client
+        res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
 };
+
+// Retry function with exponential backoff
+const retryWithExponentialBackoff = async (func, maxRetries = 3, initialDelay = 1000) => {
+    let retries = 0;
+    while (retries < maxRetries) {
+        try {
+            await func();
+            return;
+        } catch (error) {
+            console.error('Error in retryWithExponentialBackoff:', error.message);
+            retries++;
+            await sleep(initialDelay * Math.pow(2, retries));
+        }
+    }
+    throw new Error('Max retries reached');
+};
+
+// Function to introduce delay (sleep) between retries
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

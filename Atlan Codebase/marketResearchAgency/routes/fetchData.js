@@ -2,10 +2,9 @@
 
 const express = require('express');
 const router = express.Router();
-const fetchUser = require('../middleware/fetchUser');
-const fetchDataController = require('../controllers/fetchDataController');
+const fetchDataController = require('../controller/fetchDataController');
 
 // ROUTE: Fetch Data
-router.post('/:formId', fetchUser, fetchDataController.fetchAndSaveData);
+router.post('/:formId', fetchDataController.fetchAndSaveData);
 
 module.exports = router;

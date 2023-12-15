@@ -13,6 +13,6 @@ app.use(express.json());
 app.use('/validate', validationRoutes);
 app.use('/fetchdata', fetchDataRoutes); 
 
-app.listen(port, () => {
+app.listen(PORT, () => {
   console.log(`Server is running on port: ${PORT}`);
 });

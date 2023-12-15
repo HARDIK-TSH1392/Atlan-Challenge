@@ -5,41 +5,55 @@ const fs = require('fs');
 const credentialsPath = require('../credentials.json');
 
 const getData = async (req, res) => {
-  try {
-    const formId = req.params.formId;
-
-    // Fetch form data from the main server
-    const formResponse = await axios.get(`http://localhost:5002/api/form/displayform/${formId}`, {
-      headers: { Authorization: req.headers.authorization },
-    });
-    const form = formResponse.data;
-
-    // Fetch responses data from the main server with authorization header
-    const responsesResponse = await axios.get(`http://localhost:5002/api/responses/getresponses/${formId}`, {
-      headers: { Authorization: req.headers.authorization },
-    });
-    const responses = responsesResponse.data;
-
-    // Combine form and responses data
-    const formData = {
-      form,
-      responses,
-    };
-
-    // Export form questions to Google Sheets as the first row
-    await exportFormQuestionsToSheets(form);
-
-    // Iterate over responses and get answers array for each response
-    for (const response of responses) {
-      await exportAnswersArrayToSheets(response.answers, req.headers.authorization);
+  let retryCount = 3; // Set the maximum number of retries
+  while (retryCount > 0) {
+    try {
+      const formData = await fetchData(req);
+      return res.status(200).json(formData);
+    } catch (error) {
+      console.error('Error fetching questions and responses:', error);
+      if (retryCount > 1) {
+        console.log(`Retrying... Remaining retries: ${retryCount - 1}`);
+        await sleep(5000); // Add a delay before retrying (5 seconds in this case)
+      } else {
+        return res.status(500).json({ error: 'Internal Server Error' });
+      }
     }
-
-    // Return the combined data in the response
-    return res.status(200).json(formData);
-  } catch (error) {
-    console.error('Error fetching questions and responses:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    retryCount--;
   }
+};
+
+const fetchData = async (req) => {
+  const formId = req.params.formId;
+
+  // Fetch form data from the main server
+  const formResponse = await axios.get(`http://localhost:5002/api/form/displayform/${formId}`, {
+    headers: { Authorization: req.headers.authorization },
+  });
+  const form = formResponse.data;
+
+  // Fetch responses data from the main server with authorization header
+  const responsesResponse = await axios.get(`http://localhost:5002/api/responses/getresponses/${formId}`, {
+    headers: { Authorization: req.headers.authorization },
+  });
+  const responses = responsesResponse.data;
+
+  // Combine form and responses data
+  const formData = {
+    form,
+    responses,
+  };
+
+  // Export form questions to Google Sheets as the first row
+  await exportFormQuestionsToSheets(form);
+
+  // Iterate over responses and get answers array for each response
+  for (const response of responses) {
+    await exportAnswersArrayToSheets(response.answers, req.headers.authorization);
+  }
+
+  console.log('Data successfully fetched and exported to Google Sheets');
+  return formData;
 };
 
 const exportFormQuestionsToSheets = async (form) => {
@@ -142,7 +156,7 @@ const executeWithRateLimiting = async (func) => {
   }
 };
 
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 module.exports = {
   getData,

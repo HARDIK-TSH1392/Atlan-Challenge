@@ -2,9 +2,30 @@ const User = require('../models/User');
 const { validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const retry = require('retry');
 
 // TODO: Put your JWT_SECRET here
 const JWT_SECRET = 'Thisis@Secret';
+
+const createUserWithRetry = async (newUser) => {
+    const operation = retry.operation();
+
+    return new Promise((resolve, reject) => {
+        operation.attempt(async (currentAttempt) => {
+            try {
+                const user = await User.create(newUser);
+                resolve(user);
+            } catch (error) {
+                if (operation.retry(error)) {
+                    console.log(`Retrying createUser (attempt ${currentAttempt + 1}): ${error.message}`);
+                    return;
+                }
+                console.error(`Error creating user after ${currentAttempt} attempts: ${error.message}`);
+                reject(error);
+            }
+        });
+    });
+};
 
 // Route handler for user registration
 exports.createUser = async (req, res) => {
@@ -29,7 +50,7 @@ exports.createUser = async (req, res) => {
             email: req.body.email
         };
 
-        const user = await User.create(newUser);
+        const user = await createUserWithRetry(newUser);
 
         const data = {
             user: {
@@ -41,19 +62,18 @@ exports.createUser = async (req, res) => {
         success = true;
         res.status(200).json({ success, authToken });
     } catch (error) {
-        console.error(error.message);
+        console.error(`createUser Error: ${error.message}`);
         res.status(500).send("Internal Server Error");
     }
 };
 
 // Route handler for user login
 exports.login = async (req, res) => {
-    let success = false
+    let success = false;
     // If there are errors, return Bad request and the errors
     let errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: [{ param: "email", msg: "Please try to login with correct credentials" }] });
-
     }
 
     // Destructuring to obtain email and password from body
@@ -62,27 +82,26 @@ exports.login = async (req, res) => {
     try {
         let user = await User.findOne({ email });
         if (!user) {
-            success = false
+            success = false;
             return res.status(400).json({ error: "Please try to login with correct credentials" });
         }
 
         const passwordCompare = await bcrypt.compare(password, user.password);
         if (!passwordCompare) {
-            success = false
+            success = false;
             return res.status(400).json({ success, errors: [{ param: "password", msg: "Please try to login with correct credentials" }] });
-
         }
 
         const data = {
             user: {
                 id: user.id
             }
-        }
+        };
         const authToken = jwt.sign(data, JWT_SECRET);
-        success = true
-        res.json({ success, authToken })
+        success = true;
+        res.json({ success, authToken });
     } catch (error) {
-        console.log(error.message);
+        console.error(`login Error: ${error.message}`);
         res.status(500).send("Internal Server Error");
     }
 };
@@ -92,10 +111,10 @@ exports.getUser = async (req, res) => {
     try {
         userId = req.user.id;
         // Selecting all the user fields except the password
-        const user = await User.findById(userId).select("-password")
+        const user = await User.findById(userId).select("-password");
         res.send(user);
     } catch (error) {
-        console.log(error.message);
+        console.error(`getUser Error: ${error.message}`);
         res.status(500).send("Internal Server Error");
     }
 };
