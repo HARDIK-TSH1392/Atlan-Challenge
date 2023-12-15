@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 const AnswerSchema = new Schema({
     answers: [
-        Schema.Types.Mixe
+        Schema.Types.Mixed
     ],
     date: {
         type: Date,
@@ -11,5 +11,5 @@ const AnswerSchema = new Schema({
     }
 });
 
-const Answer = mongoose.model('Answer', AnswerSchema);
+const Answer = mongoose.model('Answers', AnswerSchema);
 module.exports = Answer;

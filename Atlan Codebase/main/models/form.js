@@ -2,7 +2,10 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const FormSchema = new Schema({
-    title: String,
+    title: {
+        type: String,
+        required: true
+    },
     questions: {
         type: Schema.Types.ObjectId,
         ref: 'Question'
