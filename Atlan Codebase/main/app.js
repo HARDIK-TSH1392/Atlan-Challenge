@@ -14,6 +14,7 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/form', require('./routes/form'));
 app.use('/api/responses', require('./routes/responses'));
+app.use('/api/feedback', require('./routes/feedback'));
 
 app.listen(port, () => {
     console.log(`Server is running on port: ${port}`);
