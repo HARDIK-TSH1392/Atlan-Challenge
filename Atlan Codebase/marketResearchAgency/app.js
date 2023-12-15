@@ -1,6 +1,4 @@
 const express = require('express');
-const axios = require('axios');
-const { sequelize } = require('./models'); // Ensure the path to your models is correct
 const cors = require('cors');
 const validationRoutes = require('./routes/validate');
 const fetchDataRoutes = require('./routes/fetchData'); 
