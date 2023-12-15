@@ -1,5 +1,4 @@
 const express = require('express');
-const { sequelize } = require('./models'); // Ensure the path to your models is correct
 const cors = require('cors');
 const getData = require('./routes/getData');
 

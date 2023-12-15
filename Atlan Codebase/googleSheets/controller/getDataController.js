@@ -82,7 +82,7 @@ const exportAnswersArrayToSheets = async (answerId) => {
         const answers = answersResponse.data;
 
         // Dynamic Spreadsheet ID
-        const spreadsheetId = 'YOUR_SPREADSHEET_ID'; // Replace with your actual Spreadsheet ID
+        const spreadsheetId = '1lzPp2Bz7romc4aYBbjd4gt9RvnRkUnlJoArOrVil3g4';
         const range = 'Sheet1';
 
         // Create values array for writing to the sheet (answers array as a new row)
