@@ -24,7 +24,7 @@ router.get('/getform/:formId', fetchUser, formController.getFormById);
 // ROUTE: Add Questions to a Form
 router.post('/addquestions/:formId', fetchUser, formController.addQuestionsToForm);
 
-// ROUTE: Generate Form
+// ROUTE: Display Form
 router.get('/displayform/:formId', formController.displayForm);
 
 

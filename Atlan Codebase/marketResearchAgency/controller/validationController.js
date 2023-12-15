@@ -1,56 +1,38 @@
+// controllers/validationController.js
+
 const axios = require('axios');
+const Data = require('../models/Data');
+const feedbackController = require('./feedbackController');
 
-const validateResponses = async (req, res) => {
-  try {
-    // Assume the request body contains the formId for which responses need validation
-    const { formId } = req.body;
+// Function to compare income and saving values and submit feedback if needed
+exports.validateAndSubmitFeedback = async (req, res) => {
+    try {
+        // Retrieve data from the Data model
+        const data = await Data.findOne();
 
-    // Fetch the form questions for reference
-    const formResponse = await axios.get(`http://localhost:3000/forms/${formId}`);
-    const form = formResponse.data;
+        // Check if data is present and both income and saving arrays have the same length
+        if (data && data.income.length === data.saving.length) {
+            const { income, saving } = data;
 
-    // Fetch all responses for the specified form
-    const responsesResponse = await axios.get(`http://localhost:3000/responses/${formId}/responses`);
-    const responses = responsesResponse.data;
+            // Iterate over the arrays and compare values
+            for (let i = 0; i < income.length; i++) {
+                if (saving[i] > income[i]) {
+                    // API call to submit feedback
+                    const feedbackApiUrl = 'http://localhost:5002/api/feedback/submitfeedback';
+                    const feedbackData = {
+                        message: 'Inconsistent values',
+                        values: { income: income[i], saving: saving[i] }
+                    };
+                    await axios.post(feedbackApiUrl, feedbackData, { headers: { Authorization: req.headers.authorization } });
+                }
+            }
 
-    // Implement your business rules validation logic here
-    const flaggedResponses = validateBusinessRules(responses, form);
-
-    // Send flagged responses back to the data collector
-    await sendFlaggedResponses(flaggedResponses);
-
-    return res.status(200).json({ message: 'Responses validated successfully' });
-  } catch (error) {
-    console.error('Error validating responses:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
-  }
-};
-
-const validateBusinessRules = (responses, form) => {
-  // Implement your specific business rules validation logic here
-  // For example, check if income is more than savings
-  // If a rule generates a flag, add the response ID to flaggedResponses array
-  const flaggedResponses = [];
-
-  for (const response of responses) {
-    const { income, savings } = response;
-
-    if (income > savings) {
-      flaggedResponses.push(response.id);
-      // You can also store additional information or send a message if needed
-      // e.g., flaggedResponses.push({ id: response.id, message: 'Income is more than savings' });
+            res.status(200).json({ success: true, message: 'Validation completed successfully' });
+        } else {
+            res.status(404).json({ success: false, message: 'Data not found or inconsistent arrays' });
+        }
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).send('Internal Server Error');
     }
-  }
-
-  return flaggedResponses;
-};
-
-const sendFlaggedResponses = async (flaggedResponses) => {
-  // Send the flagged responses back to the data collector
-  // Update the URL and add any necessary authentication headers
-  await axios.post('http://localhost:3000/forms/clientFeedback', flaggedResponses);
-};
-
-module.exports = {
-  validateResponses,
 };

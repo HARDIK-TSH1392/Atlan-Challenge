@@ -10,7 +10,7 @@ const FeedbackSchema = new Schema({
         required: true
     },
     flag: {
-        type: String,
+        type: Schema.Types.Mixed,
         required: true
     },
     date: {
