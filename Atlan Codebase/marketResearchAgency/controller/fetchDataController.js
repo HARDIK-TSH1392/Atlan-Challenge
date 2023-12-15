@@ -9,7 +9,7 @@ exports.fetchAndSaveData = async (req, res) => {
         const { formId } = req.params;
 
         // API call to get all responses for a form
-        const responseApiUrl = `http://main-server/api/responses/getresponses/${formId}`;
+        const responseApiUrl = `http://localhost:5002/api/responses/getresponses/${formId}`;
         const responsesResponse = await axios.get(responseApiUrl, { headers: { Authorization: req.headers.authorization } });
         const responsesArray = responsesResponse.data;
 
@@ -22,7 +22,7 @@ exports.fetchAndSaveData = async (req, res) => {
             const { id: answerId } = response;
 
             // API call to get answers for an answer
-            const answersApiUrl = `http://main-server/api/responses/getanswers/${answerId}`;
+            const answersApiUrl = `http://localhost:5002/api/responses/getanswers/${answerId}`;
             const answersResponse = await axios.get(answersApiUrl, { headers: { Authorization: req.headers.authorization } });
             const answersArray = answersResponse.data.answers;
 
